@@ -1,0 +1,1673 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>AAC Match (Sound + Data Tracking)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    body { background:#f4f6f9; }
+
+    .card{
+      border-radius: 20px;
+      border: none;
+      box-shadow: 0 8px 24px rgba(0,0,0,.08);
+    }
+
+    /* AAC-friendly: big target + big tiles */
+    :root{
+      --tile: 150px;
+      --gap: 18px;
+      --radius: 22px;
+      --target-h: 260px;
+    }
+
+    .aac-mode{
+      --tile: 190px;
+      --gap: 22px;
+      --radius: 26px;
+      --target-h: 320px;
+    }
+
+    .target-color{
+      height: var(--target-h);
+      border-radius: calc(var(--radius) + 6px);
+      border: 5px solid rgba(0,0,0,.12);
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,.35);
+    }
+
+    .choice-grid{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(var(--tile), 1fr));
+      gap: var(--gap);
+    }
+
+    .choice-btn{
+      height: var(--tile);
+      border-radius: var(--radius);
+      border: 5px solid rgba(0,0,0,.12);
+      cursor: pointer;
+      transition: transform .08s ease, box-shadow .08s ease, border-color .08s ease;
+      box-shadow: 0 10px 22px rgba(0,0,0,.10);
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .choice-btn:active{ transform: scale(0.985); }
+
+    .choice-btn.correct{
+      border-color:#198754;
+      box-shadow: 0 0 0 6px rgba(25,135,84,.18), 0 10px 22px rgba(0,0,0,.10);
+    }
+    .choice-btn.wrong{
+      border-color:#dc3545;
+      box-shadow: 0 0 0 6px rgba(220,53,69,.18), 0 10px 22px rgba(0,0,0,.10);
+    }
+
+    .big-status{
+      font-size: clamp(1.4rem, 2.2vw, 2.2rem);
+      font-weight: 700;
+      min-height: 2.6rem;
+    }
+
+    .score-badge{ font-size: 1.15rem; }
+    .small-muted{ color:#6c757d; font-size:.95rem; }
+
+    /* Teacher table */
+    .table thead th{ white-space: nowrap; }
+    .nowrap{ white-space: nowrap; }
+
+    /* Letter tiles */
+    .letter-target{
+      height: var(--target-h);
+      border-radius: calc(var(--radius) + 6px);
+      border: 5px solid rgba(0,0,0,.12);
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,.35);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight: 800;
+      font-size: clamp(4rem, 8vw, 7rem);
+      background: #fff;
+      color: #111;
+      letter-spacing: 0.06em;
+    }
+
+    .letter-tile{
+      height: var(--tile);
+      border-radius: var(--radius);
+      border: 5px solid rgba(0,0,0,.12);
+      cursor: pointer;
+      transition: transform .08s ease, box-shadow .08s ease, border-color .08s ease;
+      box-shadow: 0 10px 22px rgba(0,0,0,.10);
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight: 800;
+      font-size: clamp(2.6rem, 4vw, 4rem);
+      background:#fff;
+      color:#111;
+    }
+    .letter-tile:active{ transform: scale(0.985); }
+    .letter-tile.correct{
+      border-color:#198754;
+      box-shadow: 0 0 0 6px rgba(25,135,84,.18), 0 10px 22px rgba(0,0,0,.10);
+    }
+    .letter-tile.wrong{
+      border-color:#dc3545;
+      box-shadow: 0 0 0 6px rgba(220,53,69,.18), 0 10px 22px rgba(0,0,0,.10);
+    }
+
+    /* Objects (images) */
+    .object-target{
+      height: var(--target-h);
+      border-radius: calc(var(--radius) + 6px);
+      border: 5px solid rgba(0,0,0,.12);
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,.35);
+      background: #fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow: hidden;
+      position: relative;
+    }
+    .object-target img{
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      padding: 10px;
+    }
+    .object-tile{
+      height: var(--tile);
+      border-radius: var(--radius);
+      border: 5px solid rgba(0,0,0,.12);
+      cursor: pointer;
+      transition: transform .08s ease, box-shadow .08s ease, border-color .08s ease;
+      box-shadow: 0 10px 22px rgba(0,0,0,.10);
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+
+      background:#fff;
+      overflow:hidden;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .object-tile img{
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      padding: 10px;
+      pointer-events: none;
+    }
+    .object-tile:active{ transform: scale(0.985); }
+    .object-tile.correct{
+      border-color:#198754;
+      box-shadow: 0 0 0 6px rgba(25,135,84,.18), 0 10px 22px rgba(0,0,0,.10);
+    }
+    .object-tile.wrong{
+      border-color:#dc3545;
+      box-shadow: 0 0 0 6px rgba(220,53,69,.18), 0 10px 22px rgba(0,0,0,.10);
+    }
+
+    /* Upload preview chips */
+    .thumb{
+      width: 64px;
+      height: 64px;
+      border-radius: 12px;
+      border: 2px solid rgba(0,0,0,.12);
+      overflow: hidden;
+      background:#fff;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .thumb img{
+      width:100%;
+      height:100%;
+      object-fit: cover;
+    }
+
+    /* Helper class to hide teacher setup */
+    .is-hidden{ display:none !important; }
+
+    /* Hide AAC toggle rows (colors/letters/lowercase/objects) */
+    #aacMode,
+    #aacModeLetters,
+    #aacModeLower,
+    #aacModeObjects{
+      display: none !important;
+    }
+    label[for="aacMode"],
+    label[for="aacModeLetters"],
+    label[for="aacModeLower"],
+    label[for="aacModeObjects"]{
+      display: none !important;
+    }
+
+    /* Hide Student Name inputs (all tabs) */
+    #studentName,
+    #studentNameLetters,
+    #studentNameLower,
+    #studentNameObjects{
+      display: none !important;
+    }
+    label[for="studentName"],
+    label[for="studentNameLetters"],
+    label[for="studentNameLower"],
+    label[for="studentNameObjects"]{
+      display: none !important;
+    }
+
+    /* Also remove the surrounding column spacing so the row doesn't look "empty" */
+    #studentName,
+    #studentNameLetters,
+    #studentNameLower,
+    #studentNameObjects{
+      margin: 0 !important;
+      padding: 0 !important;
+      height: 0 !important;
+      border: 0 !important;
+    }
+  </style>
+</head>
+
+<body class="p-3 p-md-4">
+<div class="container">
+
+  <!-- teacher setup hide/show toggle -->
+  <div class="d-flex justify-content-end mb-3">
+    <div class="form-check form-switch">
+      <input class="form-check-input" type="checkbox" id="hideTeacherSetup">
+      <label class="form-check-label fw-semibold" for="hideTeacherSetup">Hide teacher setup</label>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <ul class="nav nav-tabs mb-3" id="gameTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="colors-tab" data-bs-toggle="tab" data-bs-target="#colorsPane" type="button" role="tab" aria-controls="colorsPane" aria-selected="true">
+        Colors
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="letters-tab" data-bs-toggle="tab" data-bs-target="#lettersPane" type="button" role="tab" aria-controls="lettersPane" aria-selected="false">
+        Uppercase Letters
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="lowercase-tab" data-bs-toggle="tab" data-bs-target="#lowercasePane" type="button" role="tab" aria-controls="lowercasePane" aria-selected="false">
+        Lowercase Letters
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="objects-tab" data-bs-toggle="tab" data-bs-target="#objectsPane" type="button" role="tab" aria-controls="objectsPane" aria-selected="false">
+        Objects
+      </button>
+    </li>
+  </ul>
+
+  <div class="tab-content" id="gameTabsContent">
+
+    <!-- ===================== COLORS TAB ===================== -->
+    <div class="tab-pane fade show active" id="colorsPane" role="tabpanel" aria-labelledby="colors-tab" tabindex="0">
+      <div class="pane-inner">
+
+        <!-- Teacher Setup -->
+        <div class="card mb-4 teacher-setup">
+          <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+              <h4 class="mb-0">Teacher Setup</h4>
+              <div class="d-flex gap-2">
+                <button class="btn btn-outline-secondary" id="exportBtn" type="button" disabled>Export Data (CSV)</button>
+                <button class="btn btn-outline-danger" id="clearDataBtn" type="button" disabled>Clear Data</button>
+              </div>
+            </div>
+
+            <div class="row g-3 align-items-end">
+              <div class="col-lg-8">
+                <label class="form-label">Colors to Learn</label>
+                <div class="d-flex flex-wrap gap-3">
+                  <div class="form-check">
+                    <input class="form-check-input color-check" type="checkbox" value="red" checked>
+                    <label class="form-check-label">Red</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input color-check" type="checkbox" value="blue" checked>
+                    <label class="form-check-label">Blue</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input color-check" type="checkbox" value="green">
+                    <label class="form-check-label">Green</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input color-check" type="checkbox" value="yellow">
+                    <label class="form-check-label">Yellow</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input color-check" type="checkbox" value="purple">
+                    <label class="form-check-label">Purple</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input color-check" type="checkbox" value="orange">
+                    <label class="form-check-label">Orange</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input color-check" type="checkbox" value="random">
+                    <label class="form-check-label">Random</label>
+                  </div>
+                </div>
+
+                <div class="small-muted mt-2">
+                  Tip: Select 1–6 target colors. The student won’t see labels—only color tiles.
+                </div>
+              </div>
+
+              <div class="col-sm-6 col-lg-2">
+                <label class="form-label">Choices per Round</label>
+                <select id="choiceCount" class="form-select form-select-lg">
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4" selected>4</option>
+                  <option value="5">5</option>
+                  <option value="6">6</option>
+                </select>
+              </div>
+
+              <div class="col-sm-6 col-lg-2">
+                <label class="form-label">Goal</label>
+                <select id="goal" class="form-select form-select-lg">
+                  <option value="5">5</option>
+                  <option value="10" selected>10</option>
+                  <option value="15">15</option>
+                  <option value="20">20</option>
+                </select>
+              </div>
+            </div>
+
+            <hr class="my-4">
+
+            <div class="row g-3">
+              <div class="col-md-4">
+                <div class="form-check form-switch">
+                  <input class="form-check-input sound-toggle" type="checkbox" id="soundOn" checked>
+                  <label class="form-check-label fw-semibold" for="soundOn">Sound reinforcement</label>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="aacMode" checked>
+                  <label class="form-check-label fw-semibold" for="aacMode">AAC-friendly mode (bigger tiles)</label>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label fw-semibold mb-1"></label>
+                <input id="studentName" class="form-control" placeholder="e.g., Sam">
+              </div>
+            </div>
+
+            <div class="mt-4 d-flex flex-wrap gap-2">
+              <button class="btn btn-primary btn-lg" id="startBtn" type="button">Start / New Round</button>
+              <button class="btn btn-outline-secondary btn-lg" id="resetScoreBtn" type="button">Reset Score</button>
+              <button class="btn btn-outline-dark btn-lg" id="newSessionBtn" type="button">New Session</button>
+            </div>
+
+            <div class="small-muted mt-3">
+              Data tracking: logs each attempt (timestamp, target color, selected color, correct/incorrect, running score).
+            </div>
+          </div>
+        </div>
+
+        <!-- Game Area -->
+        <div class="card mb-4">
+          <div class="card-body text-center">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+              <h4 class="mb-0">Match the Color</h4>
+              <div class="d-flex flex-wrap gap-2 align-items-center justify-content-center">
+                <span class="badge bg-primary score-badge">
+                  Score: <span id="score">0</span> / <span id="goalDisplay">10</span>
+                </span>
+                <span class="badge bg-secondary score-badge">
+                  Attempts: <span id="attempts">0</span>
+                </span>
+                <span class="badge bg-success score-badge">
+                  Correct: <span id="correct">0</span>
+                </span>
+                <span class="badge bg-danger score-badge">
+                  Incorrect: <span id="incorrect">0</span>
+                </span>
+              </div>
+            </div>
+
+            <div id="target" class="target-color mb-4"></div>
+            <div id="choices" class="choice-grid"></div>
+            <div id="message" class="big-status mt-4"></div>
+          </div>
+        </div>
+
+        <!-- Data View -->
+        <div class="card">
+          <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+              <h5 class="mb-0">Attempt Log (most recent first)</h5>
+              <div class="small-muted">Showing last <span id="logCount">0</span> attempts</div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-sm align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th class="nowrap">Time</th>
+                    <th>Student</th>
+                    <th class="nowrap">Target</th>
+                    <th class="nowrap">Selected</th>
+                    <th>Result</th>
+                    <th class="nowrap">Score After</th>
+                  </tr>
+                </thead>
+                <tbody id="logBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="clearfix"></div>
+    </div>
+
+    <!-- ===================== LETTERS TAB ===================== -->
+    <div class="tab-pane fade" id="lettersPane" role="tabpanel" aria-labelledby="letters-tab" tabindex="0">
+      <div class="pane-inner">
+        <div class="card mb-4 teacher-setup">
+          <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+              <h4 class="mb-0">Teacher Setup (Uppercase Letters)</h4>
+              <div class="small-muted">Session only (no saving)</div>
+            </div>
+
+            <div class="row g-3 align-items-end">
+              <div class="col-lg-8">
+                <label class="form-label">Letters to Learn</label>
+                <div class="d-flex flex-wrap gap-3" id="lettersOptions"></div>
+                <div class="small-muted mt-2">Tip: Select one or more letters, or Random.</div>
+              </div>
+
+              <div class="col-sm-6 col-lg-2">
+                <label class="form-label">Choices per Round</label>
+                <select id="letterChoiceCount" class="form-select form-select-lg">
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4" selected>4</option>
+                  <option value="5">5</option>
+                  <option value="6">6</option>
+                </select>
+              </div>
+
+              <div class="col-sm-6 col-lg-2">
+                <label class="form-label">Goal</label>
+                <select id="letterGoal" class="form-select form-select-lg">
+                  <option value="5">5</option>
+                  <option value="10" selected>10</option>
+                  <option value="15">15</option>
+                  <option value="20">20</option>
+                </select>
+              </div>
+            </div>
+
+            <hr class="my-4">
+
+            <div class="row g-3">
+              <div class="col-md-4">
+                <div class="form-check form-switch">
+                  <input class="form-check-input sound-toggle" type="checkbox" id="soundOnLetters" checked>
+                  <label class="form-check-label fw-semibold" for="soundOnLetters">Sound reinforcement</label>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="aacModeLetters" checked>
+                  <label class="form-check-label fw-semibold" for="aacModeLetters">AAC-friendly mode (bigger tiles)</label>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label fw-semibold mb-1"></label>
+                <input id="studentNameLetters" class="form-control" placeholder="e.g., Sam">
+              </div>
+            </div>
+
+            <div class="mt-4 d-flex flex-wrap gap-2">
+              <button class="btn btn-primary btn-lg" id="letterStartBtn" type="button">Start / New Round</button>
+              <button class="btn btn-outline-secondary btn-lg" id="letterResetScoreBtn" type="button">Reset Score</button>
+              <button class="btn btn-outline-dark btn-lg" id="letterNewSessionBtn" type="button">New Session</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mb-4">
+          <div class="card-body text-center">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+              <h4 class="mb-0">Match the Letter</h4>
+              <div class="d-flex flex-wrap gap-2 align-items-center justify-content-center">
+                <span class="badge bg-primary score-badge">
+                  Score: <span id="letterScore">0</span> / <span id="letterGoalDisplay">10</span>
+                </span>
+                <span class="badge bg-secondary score-badge">
+                  Attempts: <span id="letterAttempts">0</span>
+                </span>
+                <span class="badge bg-success score-badge">
+                  Correct: <span id="letterCorrect">0</span>
+                </span>
+                <span class="badge bg-danger score-badge">
+                  Incorrect: <span id="letterIncorrect">0</span>
+                </span>
+              </div>
+            </div>
+
+            <div id="letterTarget" class="letter-target mb-4"></div>
+            <div id="letterChoices" class="choice-grid"></div>
+            <div id="letterMessage" class="big-status mt-4"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+              <h5 class="mb-0">Attempt Log (Letters, most recent first)</h5>
+              <div class="small-muted">Showing last <span id="letterLogCount">0</span> attempts</div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-sm align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th class="nowrap">Time</th>
+                    <th>Student</th>
+                    <th class="nowrap">Target</th>
+                    <th class="nowrap">Selected</th>
+                    <th>Result</th>
+                    <th class="nowrap">Score After</th>
+                  </tr>
+                </thead>
+                <tbody id="letterLogBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="clearfix"></div>
+    </div>
+
+    <!-- ===================== LOWERCASE TAB ===================== -->
+    <div class="tab-pane fade" id="lowercasePane" role="tabpanel" aria-labelledby="lowercase-tab" tabindex="0">
+      <div class="pane-inner">
+        <div class="card mb-4 teacher-setup">
+          <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+              <h4 class="mb-0">Teacher Setup (Lowercase Letters)</h4>
+              <div class="small-muted">Session only (no saving)</div>
+            </div>
+
+            <div class="row g-3 align-items-end">
+              <div class="col-lg-8">
+                <label class="form-label">Letters to Learn</label>
+                <div class="d-flex flex-wrap gap-3" id="lowercaseOptions"></div>
+                <div class="small-muted mt-2">Tip: Select one or more letters, or Random.</div>
+              </div>
+
+              <div class="col-sm-6 col-lg-2">
+                <label class="form-label">Choices per Round</label>
+                <select id="lowerChoiceCount" class="form-select form-select-lg">
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4" selected>4</option>
+                  <option value="5">5</option>
+                  <option value="6">6</option>
+                </select>
+              </div>
+
+              <div class="col-sm-6 col-lg-2">
+                <label class="form-label">Goal</label>
+                <select id="lowerGoal" class="form-select form-select-lg">
+                  <option value="5">5</option>
+                  <option value="10" selected>10</option>
+                  <option value="15">15</option>
+                  <option value="20">20</option>
+                </select>
+              </div>
+            </div>
+
+            <hr class="my-4">
+
+            <div class="row g-3">
+              <div class="col-md-4">
+                <div class="form-check form-switch">
+                  <input class="form-check-input sound-toggle" type="checkbox" id="soundOnLower" checked>
+                  <label class="form-check-label fw-semibold" for="soundOnLower">Sound reinforcement</label>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="aacModeLower" checked>
+                  <label class="form-check-label fw-semibold" for="aacModeLower">AAC-friendly mode (bigger tiles)</label>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label fw-semibold mb-1">Student Name (optional)</label>
+                <input id="studentNameLower" class="form-control" placeholder="e.g., Sam">
+              </div>
+            </div>
+
+            <div class="mt-4 d-flex flex-wrap gap-2">
+              <button class="btn btn-primary btn-lg" id="lowerStartBtn" type="button">Start / New Round</button>
+              <button class="btn btn-outline-secondary btn-lg" id="lowerResetScoreBtn" type="button">Reset Score</button>
+              <button class="btn btn-outline-dark btn-lg" id="lowerNewSessionBtn" type="button">New Session</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mb-4">
+          <div class="card-body text-center">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+              <h4 class="mb-0">Match the Letter</h4>
+              <div class="d-flex flex-wrap gap-2 align-items-center justify-content-center">
+                <span class="badge bg-primary score-badge">
+                  Score: <span id="lowerScore">0</span> / <span id="lowerGoalDisplay">10</span>
+                </span>
+                <span class="badge bg-secondary score-badge">
+                  Attempts: <span id="lowerAttempts">0</span>
+                </span>
+                <span class="badge bg-success score-badge">
+                  Correct: <span id="lowerCorrect">0</span>
+                </span>
+                <span class="badge bg-danger score-badge">
+                  Incorrect: <span id="lowerIncorrect">0</span>
+                </span>
+              </div>
+            </div>
+
+            <div id="lowerTarget" class="letter-target mb-4"></div>
+            <div id="lowerChoices" class="choice-grid"></div>
+            <div id="lowerMessage" class="big-status mt-4"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+              <h5 class="mb-0">Attempt Log (Lowercase, most recent first)</h5>
+              <div class="small-muted">Showing last <span id="lowerLogCount">0</span> attempts</div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-sm align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th class="nowrap">Time</th>
+                    <th>Student</th>
+                    <th class="nowrap">Target</th>
+                    <th class="nowrap">Selected</th>
+                    <th>Result</th>
+                    <th class="nowrap">Score After</th>
+                  </tr>
+                </thead>
+                <tbody id="lowerLogBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="clearfix"></div>
+    </div>
+
+    <!-- ===================== OBJECTS TAB ===================== -->
+    <div class="tab-pane fade" id="objectsPane" role="tabpanel" aria-labelledby="objects-tab" tabindex="0">
+      <div class="pane-inner">
+
+        <div class="card mb-4 teacher-setup">
+          <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+              <h4 class="mb-0">Teacher Setup (Objects)</h4>
+              <div class="small-muted">Upload images (session only)</div>
+            </div>
+
+            <div class="row g-3 align-items-end">
+              <div class="col-lg-8">
+                <label class="form-label">Upload object images (2+ recommended)</label>
+                <input class="form-control form-control-lg" type="file" id="objectFiles" accept="image/*" multiple>
+                <div class="small-muted mt-2">
+                  Tip: Use clear, simple images. Filenames are used for teacher-side logging only (not shown to student).
+                </div>
+                <div class="mt-3 d-flex flex-wrap gap-2 align-items-center" id="objectThumbs"></div>
+                <div class="mt-2">
+                  <button class="btn btn-outline-danger" id="clearObjectsBtn" type="button">Clear object set</button>
+                </div>
+              </div>
+
+              <div class="col-sm-6 col-lg-2">
+                <label class="form-label">Choices per Round</label>
+                <select id="objectChoiceCount" class="form-select form-select-lg">
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4" selected>4</option>
+                  <option value="5">5</option>
+                </select>
+              </div>
+
+              <div class="col-sm-6 col-lg-2">
+                <label class="form-label">Goal</label>
+                <select id="objectGoal" class="form-select form-select-lg">
+                  <option value="5">5</option>
+                  <option value="10" selected>10</option>
+                  <option value="15">15</option>
+                  <option value="20">20</option>
+                </select>
+              </div>
+            </div>
+
+            <hr class="my-4">
+
+            <div class="row g-3">
+              <div class="col-md-4">
+                <div class="form-check form-switch">
+                  <input class="form-check-input sound-toggle" type="checkbox" id="soundOnObjects" checked>
+                  <label class="form-check-label fw-semibold" for="soundOnObjects">Sound reinforcement</label>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="aacModeObjects" checked>
+                  <label class="form-check-label fw-semibold" for="aacModeObjects">AAC-friendly mode (bigger tiles)</label>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label fw-semibold mb-1"></label>
+                <input id="studentNameObjects" class="form-control" placeholder="e.g., Sam">
+              </div>
+            </div>
+
+            <div class="mt-4 d-flex flex-wrap gap-2">
+              <button class="btn btn-primary btn-lg" id="objectStartBtn" type="button">Start / New Round</button>
+              <button class="btn btn-outline-secondary btn-lg" id="objectResetScoreBtn" type="button">Reset Score</button>
+              <button class="btn btn-outline-dark btn-lg" id="objectNewSessionBtn" type="button">New Session</button>
+            </div>
+
+            <div class="small-muted mt-3">
+              Data tracking: logs each attempt (timestamp, target object, selected object, correct/incorrect, running score).
+            </div>
+          </div>
+        </div>
+
+        <div class="card mb-4">
+          <div class="card-body text-center">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+              <h4 class="mb-0">Match the Object</h4>
+              <div class="d-flex flex-wrap gap-2 align-items-center justify-content-center">
+                <span class="badge bg-primary score-badge">
+                  Score: <span id="objectScore">0</span> / <span id="objectGoalDisplay">10</span>
+                </span>
+                <span class="badge bg-secondary score-badge">
+                  Attempts: <span id="objectAttempts">0</span>
+                </span>
+                <span class="badge bg-success score-badge">
+                  Correct: <span id="objectCorrect">0</span>
+                </span>
+                <span class="badge bg-danger score-badge">
+                  Incorrect: <span id="objectIncorrect">0</span>
+                </span>
+              </div>
+            </div>
+
+            <div id="objectTarget" class="object-target mb-4">
+              <div class="small-muted px-3">Upload images to begin.</div>
+            </div>
+            <div id="objectChoices" class="choice-grid"></div>
+            <div id="objectMessage" class="big-status mt-4"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+              <h5 class="mb-0">Attempt Log (Objects, most recent first)</h5>
+              <div class="small-muted">Showing last <span id="objectLogCount">0</span> attempts</div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-sm align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th class="nowrap">Time</th>
+                    <th>Student</th>
+                    <th class="nowrap">Target</th>
+                    <th class="nowrap">Selected</th>
+                    <th>Result</th>
+                    <th class="nowrap">Score After</th>
+                  </tr>
+                </thead>
+                <tbody id="objectLogBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="clearfix"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Bootstrap JS needed for tabs -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  // ----- Color set (no labels shown to student) -----
+  const allColors = {
+    red:    "#ff0000",
+    blue:   "#0d6efd",
+    green:  "#198754",
+    yellow: "#ffc107",
+    purple: "#6f42c1",
+    orange: "#fd7e14"
+  };
+
+  // ----- Helpers -----
+  function $(id){ return document.getElementById(id); }
+  function shuffle(arr){ return arr.slice().sort(() => Math.random() - 0.5); }
+  function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
+  function escapeHtml(str){
+    return (str ?? "").toString()
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  // --- SOUND ---
+  function isSoundEnabledForActiveTab(){
+    const activePane = document.querySelector(".tab-pane.active.show");
+    if (!activePane) return true;
+    const toggle = activePane.querySelector(".sound-toggle");
+    return toggle ? !!toggle.checked : true;
+  }
+
+  function playSound(kind){
+    if (!isSoundEnabledForActiveTab()) return;
+
+    const el = document.getElementById(kind === "correct" ? "soundCorrect" : "soundWrong");
+    if (!el) return;
+
+    try{
+      el.currentTime = 0;
+      const p = el.play();
+      if (p && typeof p.catch === "function") p.catch(() => {});
+    } catch (_) {}
+  }
+
+  // ===== AAC mode switching per active tab =====
+  function setAACFromActiveTab(){
+    const activePane = document.querySelector(".tab-pane.active.show");
+    if (!activePane) return;
+
+    const aacToggle = activePane.querySelector('input[type="checkbox"][id^="aacMode"]');
+    // If aac toggle exists in pane, use it, otherwise default keep current
+    if (aacToggle){
+      document.body.classList.toggle("aac-mode", !!aacToggle.checked);
+    }
+  }
+
+  // ===================== COLORS GAME =====================
+  let targetColor = "";
+  let score = 0, attempts = 0, correct = 0, incorrect = 0;
+  let locked = false;
+  const sessionAttempts = [];
+
+  function getSelectedColors() {
+    return [...document.querySelectorAll(".color-check:checked")].map(cb => cb.value);
+  }
+
+  function renderSessionLog(){
+    const recent = sessionAttempts.slice().reverse().slice(0, 100);
+    $("logCount").textContent = String(sessionAttempts.length);
+
+    const tbody = $("logBody");
+    tbody.innerHTML = "";
+    recent.forEach(row => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="nowrap">${escapeHtml(row.timeStr)}</td>
+        <td>${escapeHtml(row.student || "")}</td>
+        <td class="nowrap">${escapeHtml(row.target || "")}</td>
+        <td class="nowrap">${escapeHtml(row.selected || "")}</td>
+        <td>
+          <span class="badge ${row.result === "correct" ? "bg-success" : "bg-danger"}">
+            ${row.result === "correct" ? "Correct" : "Incorrect"}
+          </span>
+        </td>
+        <td class="nowrap">${escapeHtml(String(row.scoreAfter ?? ""))}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function logAttempt({ target, selected, result, scoreAfter }){
+    sessionAttempts.push({
+      timeStr: new Date().toLocaleString(),
+      student: ($("studentName").value || "").trim(),
+      target, selected, result, scoreAfter
+    });
+    renderSessionLog();
+  }
+
+  function startRound(){
+    locked = false;
+    $("message").textContent = "";
+
+    const selected = getSelectedColors();
+    if (selected.length === 0){
+      alert("Please select at least one color.");
+      return;
+    }
+
+    const choiceCount = clamp(parseInt($("choiceCount").value || "4", 10), 2, 6);
+
+    const realColorKeys = Object.keys(allColors);
+    const targetPool = selected.includes("random")
+      ? realColorKeys
+      : selected.filter(k => k !== "random");
+
+    if (targetPool.length === 0){
+      alert('If you select "Random" only, please keep it checked (it already allows all colors).');
+      return;
+    }
+
+    targetColor = shuffle(targetPool)[0];
+    $("target").style.background = allColors[targetColor];
+
+    const pool = realColorKeys.filter(c => c !== targetColor);
+    const choices = shuffle([targetColor, ...shuffle(pool).slice(0, choiceCount - 1)]);
+
+    const choicesDiv = $("choices");
+    choicesDiv.innerHTML = "";
+    choices.forEach(colorKey => {
+      const tile = document.createElement("div");
+      tile.className = "choice-btn";
+      tile.style.background = allColors[colorKey];
+      tile.setAttribute("role", "button");
+      tile.setAttribute("aria-label", "Color choice");
+      tile.tabIndex = 0;
+
+      const activate = () => handleChoice(tile, colorKey);
+      tile.addEventListener("click", activate);
+      tile.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activate(); }
+      });
+
+      choicesDiv.appendChild(tile);
+    });
+
+    $("goalDisplay").textContent = $("goal").value;
+  }
+
+  function handleChoice(tile, chosenKey){
+    if (locked) return;
+
+    attempts++;
+    $("attempts").textContent = attempts;
+
+    if (chosenKey === targetColor){
+      locked = true;
+      correct++; score++;
+
+      tile.classList.add("correct");
+      $("correct").textContent = correct;
+      $("score").textContent = score;
+
+      $("message").textContent = "✔ Correct!";
+      playSound("correct");
+
+      logAttempt({ target: targetColor, selected: chosenKey, result: "correct", scoreAfter: score });
+
+      const goal = parseInt($("goal").value, 10) || 10;
+      if (score >= goal){
+        $("message").textContent = "🎉 Goal reached!";
+        return;
+      }
+      setTimeout(() => startRound(), 700);
+    } else {
+      incorrect++;
+      tile.classList.add("wrong");
+      $("incorrect").textContent = incorrect;
+
+      $("message").textContent = "✖ Try again";
+      playSound("wrong");
+
+      logAttempt({ target: targetColor, selected: chosenKey, result: "incorrect", scoreAfter: score });
+    }
+  }
+
+  function resetScore(){
+    score = 0; attempts = 0; correct = 0; incorrect = 0;
+    $("score").textContent = "0";
+    $("attempts").textContent = "0";
+    $("correct").textContent = "0";
+    $("incorrect").textContent = "0";
+    $("message").textContent = "";
+    $("goalDisplay").textContent = $("goal").value;
+    locked = false;
+
+    sessionAttempts.length = 0;
+    renderSessionLog();
+  }
+
+  $("startBtn").addEventListener("click", () => { setAACFromActiveTab(); startRound(); });
+  $("resetScoreBtn").addEventListener("click", () => { resetScore(); startRound(); });
+  $("newSessionBtn").addEventListener("click", () => { resetScore(); startRound(); });
+  $("aacMode").addEventListener("change", setAACFromActiveTab);
+  $("goal").addEventListener("change", () => $("goalDisplay").textContent = $("goal").value);
+
+  renderSessionLog();
+  setAACFromActiveTab();
+  startRound();
+
+  // ===================== LETTERS GAME =====================
+  const allLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+  let letterTarget = "";
+  let letterScore = 0, letterAttempts = 0, letterCorrect = 0, letterIncorrect = 0;
+  let letterLocked = false;
+  const letterSessionAttempts = [];
+
+  function getSelectedLetters(){
+    return [...document.querySelectorAll(".letter-check:checked")].map(cb => cb.value);
+  }
+
+  function renderLetterLog(){
+    const recent = letterSessionAttempts.slice().reverse().slice(0, 100);
+    $("letterLogCount").textContent = String(letterSessionAttempts.length);
+
+    const tbody = $("letterLogBody");
+    tbody.innerHTML = "";
+    recent.forEach(row => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="nowrap">${escapeHtml(row.timeStr)}</td>
+        <td>${escapeHtml(row.student || "")}</td>
+        <td class="nowrap">${escapeHtml(row.target || "")}</td>
+        <td class="nowrap">${escapeHtml(row.selected || "")}</td>
+        <td>
+          <span class="badge ${row.result === "correct" ? "bg-success" : "bg-danger"}">
+            ${row.result === "correct" ? "Correct" : "Incorrect"}
+          </span>
+        </td>
+        <td class="nowrap">${escapeHtml(String(row.scoreAfter ?? ""))}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function logLetterAttempt({ target, selected, result, scoreAfter }){
+    letterSessionAttempts.push({
+      timeStr: new Date().toLocaleString(),
+      student: ($("studentNameLetters").value || "").trim(),
+      target, selected, result, scoreAfter
+    });
+    renderLetterLog();
+  }
+
+  function renderLetterOptions(){
+    const host = $("lettersOptions");
+    if (!host) return;
+    host.innerHTML = "";
+
+    allLetters.forEach(letter => {
+      const wrap = document.createElement("div");
+      wrap.className = "form-check";
+      const checked = (letter === "A" || letter === "B");
+      wrap.innerHTML = `
+        <input class="form-check-input letter-check" type="checkbox" value="${letter}" ${checked ? "checked" : ""}>
+        <label class="form-check-label">${letter}</label>
+      `;
+      host.appendChild(wrap);
+    });
+
+    const randomWrap = document.createElement("div");
+    randomWrap.className = "form-check";
+    randomWrap.innerHTML = `
+      <input class="form-check-input letter-check" type="checkbox" value="random">
+      <label class="form-check-label">Random</label>
+    `;
+    host.appendChild(randomWrap);
+  }
+
+  function startLetterRound(){
+    letterLocked = false;
+    $("letterMessage").textContent = "";
+
+    const selected = getSelectedLetters();
+    if (selected.length === 0){
+      alert("Please select at least one letter.");
+      return;
+    }
+
+    const choiceCount = clamp(parseInt($("letterChoiceCount").value || "4", 10), 2, 6);
+    const targetPool = selected.includes("random") ? allLetters : selected.filter(x => x !== "random");
+
+    if (targetPool.length === 0){
+      alert('If you select "Random" only, please keep it checked (it already allows all letters).');
+      return;
+    }
+
+    letterTarget = shuffle(targetPool)[0];
+    $("letterTarget").textContent = letterTarget;
+
+    const pool = allLetters.filter(l => l !== letterTarget);
+    const choices = shuffle([letterTarget, ...shuffle(pool).slice(0, choiceCount - 1)]);
+
+    const choicesDiv = $("letterChoices");
+    choicesDiv.innerHTML = "";
+    choices.forEach(letter => {
+      const tile = document.createElement("div");
+      tile.className = "letter-tile";
+      tile.textContent = letter;
+      tile.setAttribute("role","button");
+      tile.setAttribute("aria-label","Letter choice");
+      tile.tabIndex = 0;
+
+      const activate = () => handleLetterChoice(tile, letter);
+      tile.addEventListener("click", activate);
+      tile.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activate(); }
+      });
+
+      choicesDiv.appendChild(tile);
+    });
+
+    $("letterGoalDisplay").textContent = $("letterGoal").value;
+  }
+
+  function handleLetterChoice(tile, chosen){
+    if (letterLocked) return;
+
+    letterAttempts++;
+    $("letterAttempts").textContent = String(letterAttempts);
+
+    if (chosen === letterTarget){
+      letterLocked = true;
+      letterCorrect++; letterScore++;
+
+      tile.classList.add("correct");
+      $("letterCorrect").textContent = String(letterCorrect);
+      $("letterScore").textContent = String(letterScore);
+
+      $("letterMessage").textContent = "✔ Correct!";
+      playSound("correct");
+
+      logLetterAttempt({ target: letterTarget, selected: chosen, result: "correct", scoreAfter: letterScore });
+
+      const goal = parseInt($("letterGoal").value, 10) || 10;
+      if (letterScore >= goal){
+        $("letterMessage").textContent = "Goal reached!";
+        return;
+      }
+      setTimeout(() => startLetterRound(), 700);
+    } else {
+      letterIncorrect++;
+      tile.classList.add("wrong");
+      $("letterIncorrect").textContent = String(letterIncorrect);
+
+      $("letterMessage").textContent = "✖ Try again";
+      playSound("wrong");
+
+      logLetterAttempt({ target: letterTarget, selected: chosen, result: "incorrect", scoreAfter: letterScore });
+    }
+  }
+
+  function resetLetterSession(){
+    letterScore = 0; letterAttempts = 0; letterCorrect = 0; letterIncorrect = 0;
+    $("letterScore").textContent = "0";
+    $("letterAttempts").textContent = "0";
+    $("letterCorrect").textContent = "0";
+    $("letterIncorrect").textContent = "0";
+    $("letterMessage").textContent = "";
+    $("letterGoalDisplay").textContent = $("letterGoal").value;
+    letterLocked = false;
+
+    letterSessionAttempts.length = 0;
+    renderLetterLog();
+  }
+
+  $("letterStartBtn").addEventListener("click", () => { setAACFromActiveTab(); startLetterRound(); });
+  $("letterResetScoreBtn").addEventListener("click", () => { resetLetterSession(); startLetterRound(); });
+  $("letterNewSessionBtn").addEventListener("click", () => { resetLetterSession(); startLetterRound(); });
+  $("aacModeLetters").addEventListener("change", setAACFromActiveTab);
+  $("letterGoal").addEventListener("change", () => $("letterGoalDisplay").textContent = $("letterGoal").value);
+
+  renderLetterLog();
+  renderLetterOptions();
+
+  let lettersStarted = false;
+  document.getElementById("letters-tab").addEventListener("shown.bs.tab", () => {
+    setAACFromActiveTab();
+    if (!lettersStarted){
+      lettersStarted = true;
+      startLetterRound();
+    }
+  });
+
+  // ===================== LOWERCASE GAME =====================
+  const allLowerLetters = "abcdefghijklmnopqrstuvwxyz".split("");
+  let lowerTarget = "";
+  let lowerScore = 0, lowerAttempts = 0, lowerCorrect = 0, lowerIncorrect = 0;
+  let lowerLocked = false;
+  const lowerSessionAttempts = [];
+
+  function getSelectedLower(){
+    return [...document.querySelectorAll(".lower-check:checked")].map(cb => cb.value);
+  }
+
+  function renderLowerOptions(){
+    const host = $("lowercaseOptions");
+    if (!host) return;
+    host.innerHTML = "";
+
+    allLowerLetters.forEach(letter => {
+      const wrap = document.createElement("div");
+      wrap.className = "form-check";
+      const checked = (letter === "a" || letter === "b");
+      wrap.innerHTML = `
+        <input class="form-check-input lower-check" type="checkbox" value="${letter}" ${checked ? "checked" : ""}>
+        <label class="form-check-label">${letter}</label>
+      `;
+      host.appendChild(wrap);
+    });
+
+    const randomWrap = document.createElement("div");
+    randomWrap.className = "form-check";
+    randomWrap.innerHTML = `
+      <input class="form-check-input lower-check" type="checkbox" value="random">
+      <label class="form-check-label">Random</label>
+    `;
+    host.appendChild(randomWrap);
+  }
+
+  function renderLowerLog(){
+    const recent = lowerSessionAttempts.slice().reverse().slice(0, 100);
+    $("lowerLogCount").textContent = String(lowerSessionAttempts.length);
+
+    const tbody = $("lowerLogBody");
+    tbody.innerHTML = "";
+    recent.forEach(row => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="nowrap">${escapeHtml(row.timeStr)}</td>
+        <td>${escapeHtml(row.student || "")}</td>
+        <td class="nowrap">${escapeHtml(row.target || "")}</td>
+        <td class="nowrap">${escapeHtml(row.selected || "")}</td>
+        <td>
+          <span class="badge ${row.result === "correct" ? "bg-success" : "bg-danger"}">
+            ${row.result === "correct" ? "Correct" : "Incorrect"}
+          </span>
+        </td>
+        <td class="nowrap">${escapeHtml(String(row.scoreAfter ?? ""))}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function logLowerAttempt({ target, selected, result, scoreAfter }){
+    lowerSessionAttempts.push({
+      timeStr: new Date().toLocaleString(),
+      student: ($("studentNameLower").value || "").trim(),
+      target, selected, result, scoreAfter
+    });
+    renderLowerLog();
+  }
+
+  function startLowerRound(){
+    lowerLocked = false;
+    $("lowerMessage").textContent = "";
+
+    const selected = getSelectedLower();
+    if (selected.length === 0){
+      alert("Please select at least one lowercase letter.");
+      return;
+    }
+
+    const choiceCount = clamp(parseInt($("lowerChoiceCount").value || "4", 10), 2, 6);
+    const targetPool = selected.includes("random") ? allLowerLetters : selected.filter(x => x !== "random");
+
+    lowerTarget = shuffle(targetPool)[0];
+    $("lowerTarget").textContent = lowerTarget;
+
+    const pool = allLowerLetters.filter(l => l !== lowerTarget);
+    const choices = shuffle([lowerTarget, ...shuffle(pool).slice(0, choiceCount - 1)]);
+
+    const choicesDiv = $("lowerChoices");
+    choicesDiv.innerHTML = "";
+    choices.forEach(letter => {
+      const tile = document.createElement("div");
+      tile.className = "letter-tile";
+      tile.textContent = letter;
+      tile.setAttribute("role","button");
+      tile.setAttribute("aria-label","Lowercase letter choice");
+      tile.tabIndex = 0;
+
+      const activate = () => handleLowerChoice(tile, letter);
+      tile.addEventListener("click", activate);
+      tile.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activate(); }
+      });
+
+      choicesDiv.appendChild(tile);
+    });
+
+    $("lowerGoalDisplay").textContent = $("lowerGoal").value;
+  }
+
+  function handleLowerChoice(tile, chosen){
+    if (lowerLocked) return;
+
+    lowerAttempts++;
+    $("lowerAttempts").textContent = String(lowerAttempts);
+
+    if (chosen === lowerTarget){
+      lowerLocked = true;
+      lowerCorrect++; lowerScore++;
+
+      tile.classList.add("correct");
+      $("lowerCorrect").textContent = String(lowerCorrect);
+      $("lowerScore").textContent = String(lowerScore);
+
+      $("lowerMessage").textContent = "✔ Correct!";
+      playSound("correct");
+
+      logLowerAttempt({ target: lowerTarget, selected: chosen, result: "correct", scoreAfter: lowerScore });
+
+      const goal = parseInt($("lowerGoal").value, 10) || 10;
+      if (lowerScore >= goal){
+        $("lowerMessage").textContent = "Goal reached!";
+        return;
+      }
+      setTimeout(() => startLowerRound(), 700);
+    } else {
+      lowerIncorrect++;
+      tile.classList.add("wrong");
+      $("lowerIncorrect").textContent = String(lowerIncorrect);
+
+      $("lowerMessage").textContent = "✖ Try again";
+      playSound("wrong");
+
+      logLowerAttempt({ target: lowerTarget, selected: chosen, result: "incorrect", scoreAfter: lowerScore });
+    }
+  }
+
+  function resetLowerSession(){
+    lowerScore = 0; lowerAttempts = 0; lowerCorrect = 0; lowerIncorrect = 0;
+    $("lowerScore").textContent = "0";
+    $("lowerAttempts").textContent = "0";
+    $("lowerCorrect").textContent = "0";
+    $("lowerIncorrect").textContent = "0";
+    $("lowerMessage").textContent = "";
+    $("lowerGoalDisplay").textContent = $("lowerGoal").value;
+    lowerLocked = false;
+
+    lowerSessionAttempts.length = 0;
+    renderLowerLog();
+  }
+
+  $("lowerStartBtn").addEventListener("click", () => { setAACFromActiveTab(); startLowerRound(); });
+  $("lowerResetScoreBtn").addEventListener("click", () => { resetLowerSession(); startLowerRound(); });
+  $("lowerNewSessionBtn").addEventListener("click", () => { resetLowerSession(); startLowerRound(); });
+  $("aacModeLower").addEventListener("change", setAACFromActiveTab);
+  $("lowerGoal").addEventListener("change", () => $("lowerGoalDisplay").textContent = $("lowerGoal").value);
+
+  renderLowerLog();
+  renderLowerOptions();
+
+  let lowerStarted = false;
+  document.getElementById("lowercase-tab").addEventListener("shown.bs.tab", () => {
+    setAACFromActiveTab();
+    if (!lowerStarted){
+      lowerStarted = true;
+      startLowerRound();
+    }
+  });
+
+  // ===================== OBJECTS GAME =====================
+  // session-only object set stored in memory as { id, name, dataUrl }
+  const objectItems = [];
+  let objectTargetId = "";
+  let objectScore = 0, objectAttempts = 0, objectCorrect = 0, objectIncorrect = 0;
+  let objectLocked = false;
+  const objectSessionAttempts = [];
+
+  function renderObjectThumbs(){
+    const host = $("objectThumbs");
+    if (!host) return;
+    host.innerHTML = "";
+
+    if (objectItems.length === 0){
+      host.innerHTML = `<div class="small-muted">No images uploaded yet.</div>`;
+      return;
+    }
+
+    objectItems.forEach(item => {
+      const wrap = document.createElement("div");
+      wrap.className = "d-flex align-items-center gap-2 border rounded-3 p-2 bg-white";
+      wrap.innerHTML = `
+        <span class="thumb"><img src="${item.dataUrl}" alt=""></span>
+        <div class="small">
+          <div class="fw-semibold">${escapeHtml(item.name)}</div>
+        </div>
+        <button class="btn btn-sm btn-outline-danger ms-auto" type="button" aria-label="Remove">Remove</button>
+      `;
+      wrap.querySelector("button").addEventListener("click", () => {
+        const idx = objectItems.findIndex(x => x.id === item.id);
+        if (idx >= 0) objectItems.splice(idx, 1);
+        renderObjectThumbs();
+      });
+      host.appendChild(wrap);
+    });
+  }
+
+  function renderObjectLog(){
+    const recent = objectSessionAttempts.slice().reverse().slice(0, 100);
+    $("objectLogCount").textContent = String(objectSessionAttempts.length);
+
+    const tbody = $("objectLogBody");
+    tbody.innerHTML = "";
+    recent.forEach(row => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="nowrap">${escapeHtml(row.timeStr)}</td>
+        <td>${escapeHtml(row.student || "")}</td>
+        <td class="nowrap">${escapeHtml(row.target || "")}</td>
+        <td class="nowrap">${escapeHtml(row.selected || "")}</td>
+        <td>
+          <span class="badge ${row.result === "correct" ? "bg-success" : "bg-danger"}">
+            ${row.result === "correct" ? "Correct" : "Incorrect"}
+          </span>
+        </td>
+        <td class="nowrap">${escapeHtml(String(row.scoreAfter ?? ""))}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function logObjectAttempt({ target, selected, result, scoreAfter }){
+    objectSessionAttempts.push({
+      timeStr: new Date().toLocaleString(),
+      student: ($("studentNameObjects").value || "").trim(),
+      target, selected, result, scoreAfter
+    });
+    renderObjectLog();
+  }
+
+  function getObjectById(id){ return objectItems.find(x => x.id === id); }
+
+  function setObjectTarget(item){
+    const targetHost = $("objectTarget");
+    targetHost.innerHTML = "";
+    const img = document.createElement("img");
+    img.src = item.dataUrl;
+    img.alt = "";
+    targetHost.appendChild(img);
+  }
+
+  function startObjectRound(){
+    objectLocked = false;
+    $("objectMessage").textContent = "";
+
+    if (objectItems.length < 2){
+      alert("Please upload at least 2 object images first.");
+      return;
+    }
+
+    const choiceCount = clamp(parseInt($("objectChoiceCount").value || "4", 10), 2, 5);
+
+    const target = shuffle(objectItems)[0];
+    objectTargetId = target.id;
+    setObjectTarget(target);
+
+    const distractors = shuffle(objectItems.filter(x => x.id !== objectTargetId)).slice(0, choiceCount - 1);
+    const choices = shuffle([target, ...distractors]);
+
+    const choicesDiv = $("objectChoices");
+    choicesDiv.innerHTML = "";
+    choices.forEach(item => {
+      const tile = document.createElement("div");
+      tile.className = "object-tile";
+      tile.setAttribute("role", "button");
+      tile.setAttribute("aria-label", "Object choice");
+      tile.tabIndex = 0;
+
+      const img = document.createElement("img");
+      img.src = item.dataUrl;
+      img.alt = "";
+      tile.appendChild(img);
+
+      const activate = () => handleObjectChoice(tile, item.id);
+      tile.addEventListener("click", activate);
+      tile.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activate(); }
+      });
+
+      choicesDiv.appendChild(tile);
+    });
+
+    $("objectGoalDisplay").textContent = $("objectGoal").value;
+  }
+
+  function handleObjectChoice(tile, chosenId){
+    if (objectLocked) return;
+
+    objectAttempts++;
+    $("objectAttempts").textContent = String(objectAttempts);
+
+    const targetItem = getObjectById(objectTargetId);
+    const chosenItem = getObjectById(chosenId);
+
+    const targetName = targetItem ? targetItem.name : "(unknown)";
+    const chosenName = chosenItem ? chosenItem.name : "(unknown)";
+
+    if (chosenId === objectTargetId){
+      objectLocked = true;
+      objectCorrect++; objectScore++;
+
+      tile.classList.add("correct");
+      $("objectCorrect").textContent = String(objectCorrect);
+      $("objectScore").textContent = String(objectScore);
+
+      $("objectMessage").textContent = "✔ Correct!";
+      playSound("correct");
+
+      logObjectAttempt({ target: targetName, selected: chosenName, result: "correct", scoreAfter: objectScore });
+
+      const goal = parseInt($("objectGoal").value, 10) || 10;
+      if (objectScore >= goal){
+        $("objectMessage").textContent = "🎉 Goal reached!";
+        return;
+      }
+
+      setTimeout(() => startObjectRound(), 700);
+    } else {
+      objectIncorrect++;
+      tile.classList.add("wrong");
+      $("objectIncorrect").textContent = String(objectIncorrect);
+
+      $("objectMessage").textContent = "✖ Try again";
+      playSound("wrong");
+
+      logObjectAttempt({ target: targetName, selected: chosenName, result: "incorrect", scoreAfter: objectScore });
+    }
+  }
+
+  function resetObjectSession(){
+    objectScore = 0; objectAttempts = 0; objectCorrect = 0; objectIncorrect = 0;
+    $("objectScore").textContent = "0";
+    $("objectAttempts").textContent = "0";
+    $("objectCorrect").textContent = "0";
+    $("objectIncorrect").textContent = "0";
+    $("objectMessage").textContent = "";
+    $("objectGoalDisplay").textContent = $("objectGoal").value;
+    objectLocked = false;
+
+    objectSessionAttempts.length = 0;
+    renderObjectLog();
+  }
+
+  $("objectFiles").addEventListener("change", async (e) => {
+    const files = [...(e.target.files || [])];
+    if (files.length === 0) return;
+
+    // read all files as data URLs
+    for (const f of files){
+      if (!f.type.startsWith("image/")) continue;
+
+      const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(f);
+      });
+
+      objectItems.push({
+        id: crypto?.randomUUID ? crypto.randomUUID() : (Date.now() + "-" + Math.random()),
+        name: f.name,
+        dataUrl: dataUrl
+      });
+    }
+
+    // reset input so same file can be re-added if needed
+    e.target.value = "";
+
+    renderObjectThumbs();
+  });
+
+  $("clearObjectsBtn").addEventListener("click", () => {
+    objectItems.length = 0;
+    renderObjectThumbs();
+
+    $("objectChoices").innerHTML = "";
+    $("objectTarget").innerHTML = `<div class="small-muted px-3">Upload images to begin.</div>`;
+    objectTargetId = "";
+  });
+
+  $("objectStartBtn").addEventListener("click", () => { setAACFromActiveTab(); startObjectRound(); });
+  $("objectResetScoreBtn").addEventListener("click", () => { resetObjectSession(); startObjectRound(); });
+  $("objectNewSessionBtn").addEventListener("click", () => { resetObjectSession(); startObjectRound(); });
+  $("aacModeObjects").addEventListener("change", setAACFromActiveTab);
+  $("objectGoal").addEventListener("change", () => $("objectGoalDisplay").textContent = $("objectGoal").value);
+
+  renderObjectThumbs();
+  renderObjectLog();
+
+  let objectsStarted = false;
+  document.getElementById("objects-tab").addEventListener("shown.bs.tab", () => {
+    setAACFromActiveTab();
+    if (!objectsStarted){
+      objectsStarted = true;
+      // don't auto-start without images
+    }
+  });
+
+  // ===================== Hide teacher setup cards =====================
+  function setTeacherSetupHidden(hidden){
+    document.querySelectorAll(".teacher-setup").forEach(el => {
+      el.classList.toggle("is-hidden", hidden);
+    });
+    $("hideTeacherSetup").checked = hidden;
+  }
+
+  $("hideTeacherSetup").addEventListener("change", (e) => {
+    setTeacherSetupHidden(e.target.checked);
+  });
+
+  setTeacherSetupHidden(false);
+
+  // Set AAC based on active tab initially
+  setAACFromActiveTab();
+</script>
+
+<!-- SOUND FILES -->
+<audio id="soundCorrect" src="sounds/correct.mp3" preload="auto"></audio>
+<audio id="soundWrong" src="sounds/wrong.mp3" preload="auto"></audio>
+
+</body>
+</html>
