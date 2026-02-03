@@ -172,7 +172,7 @@
     }
     .object-tile.wrong{
       border-color:#dc3545;
-      box-shadow: 0 0 0 6px rgba(220,53,69,.18), 0 10px 22px rgba(0,0,0,.10);
+      box-shadow: 0 0 0 6px rgba(220,53,69,.18), 0 10px 22px rgba(220,53,69,.18), 0 10px 22px rgba(0,0,0,.10);
     }
 
     /* Upload preview chips */
@@ -196,16 +196,18 @@
     /* Helper class to hide teacher setup */
     .is-hidden{ display:none !important; }
 
-    /* Hide AAC toggle rows (colors/letters/lowercase/objects) */
+    /* Hide AAC toggle rows (colors/letters/lowercase/numbers/objects) */
     #aacMode,
     #aacModeLetters,
     #aacModeLower,
+    #aacModeNumbers,
     #aacModeObjects{
       display: none !important;
     }
     label[for="aacMode"],
     label[for="aacModeLetters"],
     label[for="aacModeLower"],
+    label[for="aacModeNumbers"],
     label[for="aacModeObjects"]{
       display: none !important;
     }
@@ -214,12 +216,14 @@
     #studentName,
     #studentNameLetters,
     #studentNameLower,
+    #studentNameNumbers,
     #studentNameObjects{
       display: none !important;
     }
     label[for="studentName"],
     label[for="studentNameLetters"],
     label[for="studentNameLower"],
+    label[for="studentNameNumbers"],
     label[for="studentNameObjects"]{
       display: none !important;
     }
@@ -228,6 +232,7 @@
     #studentName,
     #studentNameLetters,
     #studentNameLower,
+    #studentNameNumbers,
     #studentNameObjects{
       margin: 0 !important;
       padding: 0 !important;
@@ -265,6 +270,14 @@
         Lowercase Letters
       </button>
     </li>
+
+    <!-- NEW: Numbers tab (inserted between lowercase and objects) -->
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="numbers-tab" data-bs-toggle="tab" data-bs-target="#numbersPane" type="button" role="tab" aria-controls="numbersPane" aria-selected="false">
+        Numbers
+      </button>
+    </li>
+
     <li class="nav-item" role="presentation">
       <button class="nav-link" id="objects-tab" data-bs-toggle="tab" data-bs-target="#objectsPane" type="button" role="tab" aria-controls="objectsPane" aria-selected="false">
         Objects
@@ -406,7 +419,7 @@
               </div>
             </div>
 
-            <div id="target" class="target-color mb-4"></div>
+            <div id="target" class="target-color mb-5"></div>
             <div id="choices" class="choice-grid"></div>
             <div id="message" class="big-status mt-4"></div>
           </div>
@@ -532,7 +545,7 @@
               </div>
             </div>
 
-            <div id="letterTarget" class="letter-target mb-4"></div>
+            <div id="letterTarget" class="letter-target mb-5"></div>
             <div id="letterChoices" class="choice-grid"></div>
             <div id="letterMessage" class="big-status mt-4"></div>
           </div>
@@ -657,7 +670,7 @@
               </div>
             </div>
 
-            <div id="lowerTarget" class="letter-target mb-4"></div>
+            <div id="lowerTarget" class="letter-target mb-5"></div>
             <div id="lowerChoices" class="choice-grid"></div>
             <div id="lowerMessage" class="big-status mt-4"></div>
           </div>
@@ -683,6 +696,132 @@
                   </tr>
                 </thead>
                 <tbody id="lowerLogBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="clearfix"></div>
+    </div>
+
+    <!-- ===================== NUMBERS TAB ===================== -->
+    <div class="tab-pane fade" id="numbersPane" role="tabpanel" aria-labelledby="numbers-tab" tabindex="0">
+      <div class="pane-inner">
+
+        <div class="card mb-4 teacher-setup">
+          <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+              <h4 class="mb-0">Teacher Setup (Numbers)</h4>
+              <div class="small-muted">Session only (no saving)</div>
+            </div>
+
+            <div class="row g-3 align-items-end">
+              <div class="col-lg-8">
+                <label class="form-label">Numbers to Learn</label>
+                <div class="d-flex flex-wrap gap-3" id="numbersOptions"></div>
+                <div class="small-muted mt-2">Tip: Select one or more numbers, or Random.</div>
+              </div>
+
+              <div class="col-sm-6 col-lg-2">
+                <label class="form-label">Choices per Round</label>
+                <select id="numberChoiceCount" class="form-select form-select-lg">
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4" selected>4</option>
+                  <option value="5">5</option>
+                  <option value="6">6</option>
+                </select>
+              </div>
+
+              <div class="col-sm-6 col-lg-2">
+                <label class="form-label">Goal</label>
+                <select id="numberGoal" class="form-select form-select-lg">
+                  <option value="5">5</option>
+                  <option value="10" selected>10</option>
+                  <option value="15">15</option>
+                  <option value="20">20</option>
+                </select>
+              </div>
+            </div>
+
+            <hr class="my-4">
+
+            <div class="row g-3">
+              <div class="col-md-4">
+                <div class="form-check form-switch">
+                  <input class="form-check-input sound-toggle" type="checkbox" id="soundOnNumbers" checked>
+                  <label class="form-check-label fw-semibold" for="soundOnNumbers">Sound reinforcement</label>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="aacModeNumbers" checked>
+                  <label class="form-check-label fw-semibold" for="aacModeNumbers">AAC-friendly mode (bigger tiles)</label>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label fw-semibold mb-1"></label>
+                <input id="studentNameNumbers" class="form-control" placeholder="e.g., Sam">
+              </div>
+            </div>
+
+            <div class="mt-4 d-flex flex-wrap gap-2">
+              <button class="btn btn-primary btn-lg" id="numberStartBtn" type="button">Start / New Round</button>
+              <button class="btn btn-outline-secondary btn-lg" id="numberResetScoreBtn" type="button">Reset Score</button>
+              <button class="btn btn-outline-dark btn-lg" id="numberNewSessionBtn" type="button">New Session</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mb-4">
+          <div class="card-body text-center">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+              <h4 class="mb-0">Match the Number</h4>
+              <div class="d-flex flex-wrap gap-2 align-items-center justify-content-center">
+                <span class="badge bg-primary score-badge">
+                  Score: <span id="numberScore">0</span> / <span id="numberGoalDisplay">10</span>
+                </span>
+                <span class="badge bg-secondary score-badge">
+                  Attempts: <span id="numberAttempts">0</span>
+                </span>
+                <span class="badge bg-success score-badge">
+                  Correct: <span id="numberCorrect">0</span>
+                </span>
+                <span class="badge bg-danger score-badge">
+                  Incorrect: <span id="numberIncorrect">0</span>
+                </span>
+              </div>
+            </div>
+
+            <div id="numberTarget" class="letter-target mb-5"></div>
+            <div id="numberChoices" class="choice-grid"></div>
+            <div id="numberMessage" class="big-status mt-4"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+              <h5 class="mb-0">Attempt Log (Numbers, most recent first)</h5>
+              <div class="small-muted">Showing last <span id="numberLogCount">0</span> attempts</div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-sm align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th class="nowrap">Time</th>
+                    <th>Student</th>
+                    <th class="nowrap">Target</th>
+                    <th class="nowrap">Selected</th>
+                    <th>Result</th>
+                    <th class="nowrap">Score After</th>
+                  </tr>
+                </thead>
+                <tbody id="numberLogBody"></tbody>
               </table>
             </div>
           </div>
@@ -792,7 +931,7 @@
               </div>
             </div>
 
-            <div id="objectTarget" class="object-target mb-4">
+            <div id="objectTarget" class="object-target mb-5">
               <div class="small-muted px-3">Upload images to begin.</div>
             </div>
             <div id="objectChoices" class="choice-grid"></div>
@@ -1406,6 +1545,190 @@
     if (!lowerStarted){
       lowerStarted = true;
       startLowerRound();
+    }
+  });
+
+  // ===================== NUMBERS GAME =====================
+  const allNumbers = ["0","1","2","3","4","5","6","7","8","9"];
+  let numberTarget = "";
+  let numberScore = 0, numberAttempts = 0, numberCorrect = 0, numberIncorrect = 0;
+  let numberLocked = false;
+  const numberSessionAttempts = [];
+
+  function getSelectedNumbers(){
+    return [...document.querySelectorAll(".number-check:checked")].map(cb => cb.value);
+  }
+
+  function renderNumberOptions(){
+    const host = $("numbersOptions");
+    if (!host) return;
+    host.innerHTML = "";
+
+    allNumbers.forEach(n => {
+      const wrap = document.createElement("div");
+      wrap.className = "form-check";
+      const checked = (n === "0" || n === "1");
+      wrap.innerHTML = `
+        <input class="form-check-input number-check" type="checkbox" value="${n}" ${checked ? "checked" : ""}>
+        <label class="form-check-label">${n}</label>
+      `;
+      host.appendChild(wrap);
+    });
+
+    const randomWrap = document.createElement("div");
+    randomWrap.className = "form-check";
+    randomWrap.innerHTML = `
+      <input class="form-check-input number-check" type="checkbox" value="random">
+      <label class="form-check-label">Random</label>
+    `;
+    host.appendChild(randomWrap);
+  }
+
+  function renderNumberLog(){
+    const recent = numberSessionAttempts.slice().reverse().slice(0, 100);
+    $("numberLogCount").textContent = String(numberSessionAttempts.length);
+
+    const tbody = $("numberLogBody");
+    tbody.innerHTML = "";
+    recent.forEach(row => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="nowrap">${escapeHtml(row.timeStr)}</td>
+        <td>${escapeHtml(row.student || "")}</td>
+        <td class="nowrap">${escapeHtml(row.target || "")}</td>
+        <td class="nowrap">${escapeHtml(row.selected || "")}</td>
+        <td>
+          <span class="badge ${row.result === "correct" ? "bg-success" : "bg-danger"}">
+            ${row.result === "correct" ? "Correct" : "Incorrect"}
+          </span>
+        </td>
+        <td class="nowrap">${escapeHtml(String(row.scoreAfter ?? ""))}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function logNumberAttempt({ target, selected, result, scoreAfter }){
+    numberSessionAttempts.push({
+      timeStr: new Date().toLocaleString(),
+      student: ($("studentNameNumbers").value || "").trim(),
+      target, selected, result, scoreAfter
+    });
+    renderNumberLog();
+  }
+
+  function startNumberRound(){
+    numberLocked = false;
+    $("numberMessage").textContent = "";
+
+    const selected = getSelectedNumbers();
+    if (selected.length === 0){
+      alert("Please select at least one number.");
+      return;
+    }
+
+    const choiceCount = clamp(parseInt($("numberChoiceCount").value || "4", 10), 2, 6);
+    const targetPool = selected.includes("random") ? allNumbers : selected.filter(x => x !== "random");
+
+    if (targetPool.length === 0){
+      alert('If you select "Random" only, please keep it checked (it already allows all numbers).');
+      return;
+    }
+
+    numberTarget = shuffle(targetPool)[0];
+    $("numberTarget").textContent = numberTarget;
+
+    const pool = allNumbers.filter(n => n !== numberTarget);
+    const choices = shuffle([numberTarget, ...shuffle(pool).slice(0, choiceCount - 1)]);
+
+    const choicesDiv = $("numberChoices");
+    choicesDiv.innerHTML = "";
+    choices.forEach(n => {
+      const tile = document.createElement("div");
+      tile.className = "letter-tile";
+      tile.textContent = n;
+      tile.setAttribute("role","button");
+      tile.setAttribute("aria-label","Number choice");
+      tile.tabIndex = 0;
+
+      const activate = () => handleNumberChoice(tile, n);
+      tile.addEventListener("click", activate);
+      tile.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activate(); }
+      });
+
+      choicesDiv.appendChild(tile);
+    });
+
+    $("numberGoalDisplay").textContent = $("numberGoal").value;
+  }
+
+  function handleNumberChoice(tile, chosen){
+    if (numberLocked) return;
+
+    numberAttempts++;
+    $("numberAttempts").textContent = String(numberAttempts);
+
+    if (chosen === numberTarget){
+      numberLocked = true;
+      numberCorrect++; numberScore++;
+
+      tile.classList.add("correct");
+      $("numberCorrect").textContent = String(numberCorrect);
+      $("numberScore").textContent = String(numberScore);
+
+      $("numberMessage").textContent = "✔ Correct!";
+      playSound("correct");
+
+      logNumberAttempt({ target: numberTarget, selected: chosen, result: "correct", scoreAfter: numberScore });
+
+      const goal = parseInt($("numberGoal").value, 10) || 10;
+      if (numberScore >= goal){
+        $("numberMessage").textContent = "Goal reached!";
+        return;
+      }
+      setTimeout(() => startNumberRound(), 700);
+    } else {
+      numberIncorrect++;
+      tile.classList.add("wrong");
+      $("numberIncorrect").textContent = String(numberIncorrect);
+
+      $("numberMessage").textContent = "✖ Try again";
+      playSound("wrong");
+
+      logNumberAttempt({ target: numberTarget, selected: chosen, result: "incorrect", scoreAfter: numberScore });
+    }
+  }
+
+  function resetNumberSession(){
+    numberScore = 0; numberAttempts = 0; numberCorrect = 0; numberIncorrect = 0;
+    $("numberScore").textContent = "0";
+    $("numberAttempts").textContent = "0";
+    $("numberCorrect").textContent = "0";
+    $("numberIncorrect").textContent = "0";
+    $("numberMessage").textContent = "";
+    $("numberGoalDisplay").textContent = $("numberGoal").value;
+    numberLocked = false;
+
+    numberSessionAttempts.length = 0;
+    renderNumberLog();
+  }
+
+  $("numberStartBtn").addEventListener("click", () => { setAACFromActiveTab(); startNumberRound(); });
+  $("numberResetScoreBtn").addEventListener("click", () => { resetNumberSession(); startNumberRound(); });
+  $("numberNewSessionBtn").addEventListener("click", () => { resetNumberSession(); startNumberRound(); });
+  $("aacModeNumbers").addEventListener("change", setAACFromActiveTab);
+  $("numberGoal").addEventListener("change", () => $("numberGoalDisplay").textContent = $("numberGoal").value);
+
+  renderNumberLog();
+  renderNumberOptions();
+
+  let numbersStarted = false;
+  document.getElementById("numbers-tab").addEventListener("shown.bs.tab", () => {
+    setAACFromActiveTab();
+    if (!numbersStarted){
+      numbersStarted = true;
+      startNumberRound();
     }
   });
 
